@@ -1,11 +1,10 @@
 {
-  "name": "蛋鸡计算工具",
-  "short_name": "EggCalc",
-  "start_url": "/-/",
-  "scope": "/-/",
+  "name": "蛋鸡日报工具",
+  "short_name": "日报工具",
+  "start_url": "index.html",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#4caf50",
+  "description": "一个用于蛋鸡养殖数据统计与日报生成的工具",
   "icons": [
     {
       "src": "icon-192.png",
