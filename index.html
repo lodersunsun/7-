@@ -1,190 +1,160 @@
-
 <!DOCTYPE html>
 <html lang="zh">
 <head>
     <meta charset="UTF-8">
     <title>蛋鸡生产日报工具</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            line-height: 1.6;
-        }
-        table {
-            border-collapse: collapse;
-            width: 100%;
-            margin-bottom: 20px;
-        }
-        table th, table td {
-            border: 1px solid #ccc;
-            padding: 6px 10px;
-            text-align: center;
-        }
-        input, textarea {
-            width: 90%;
-        }
-        textarea {
-            height: 200px;
-            white-space: pre;
-        }
-        button {
-            padding: 10px 20px;
-            margin: 5px;
-        }
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        table { border-collapse: collapse; width: 100%; margin-bottom: 20px; }
+        th, td { border: 1px solid #ccc; padding: 6px 10px; text-align: center; }
+        input, textarea { width: 98%; box-sizing: border-box; }
+        textarea { height: 120px; }
+        button { padding: 8px 16px; margin: 5px 0; }
     </style>
 </head>
 <body>
-    <h1>蛋鸡生产日报自动生成工具</h1>
-    <h2>基础信息</h2>
-    <table>
-        <tr><td>日期</td><td><input type="date" id="date"></td>
-            <td>鸡舍</td><td><input type="text" id="flock" placeholder="如 临猗7栋"></td></tr>
-        <tr><td>品种</td><td><input type="text" id="breed" placeholder="如 粉六"></td>
-            <td>日龄</td><td><input type="number" id="age"></td></tr>
-        <tr><td>存栏</td><td><input type="number" id="stock"></td>
-            <td>光照</td><td><input type="number" id="light"></td></tr>
-        <tr><td>天气</td><td><input type="text" id="weather"></td>
-            <td>用药</td><td><textarea id="medication"></textarea></td></tr>
-    </table>
+<h1>蛋鸡生产日报自动生成工具</h1>
 
-    <h2>生产数据</h2>
-    <table>
-        <tr><td>产蛋个数</td><td><input type="number" id="eggCount"></td>
-            <td>产蛋总重量(kg)</td><td><input type="number" id="eggWeight"></td></tr>
-        <tr><td>破蛋个数</td><td><input type="number" id="brokenEggs"></td>
-            <td>死淘数</td><td><input type="number" id="deadCount"></td></tr>
-        <tr><td>收蛋时间</td><td><input type="text" id="collectTime"></td>
-            <td>总饮水(m³)</td><td><input type="number" id="waterTotal"></td></tr>
-        <tr><td>昨日料表</td><td><input type="number" id="feedMeterPrev"></td>
-            <td>今日料表</td><td><input type="number" id="feedMeterToday"></td></tr>
-        <tr><td>进料数</td><td><input type="number" id="feedAdded"></td>
-            <td>对比用料</td><td><input type="number" id="feedCompare"></td></tr>
-        <tr><td>添加剂</td><td colspan="3"><input type="text" id="additive"></td></tr>
-    </table>
+<table>
+    <tr><td>日期</td><td><input type="date" id="date"></td>
+        <td>栋号</td><td><input type="text" id="flock" value="临猗2栋"></td></tr>
+    <tr><td>品种</td><td><input type="text" id="breed" value="粉六"></td>
+        <td>日龄</td><td><input type="number" id="age"></td></tr>
+    <tr><td>昨日存栏</td><td><input type="number" id="stockYesterday"></td>
+        <td>死淘数</td><td><input type="number" id="deadCount" oninput="updateStock()"></td></tr>
+    <tr><td>今日存栏</td><td><input type="number" id="stockToday" readonly></td>
+        <td>光照</td><td><input type="number" id="light"></td></tr>
+    <tr><td>天气</td><td colspan="3"><input type="text" id="weather"></td></tr>
+    <tr><td>用药</td><td colspan="3"><textarea id="medication"></textarea></td></tr>
+</table>
 
-    <h2>饲料批次记录</h2>
-    <table id="feedTable">
-        <tr><th>料号</th><th>配方编号</th><th>生产日期</th><th>数量(kg)</th><th>操作</th></tr>
-        <tr>
-            <td><input type="text" name="feedNo"></td>
-            <td><input type="text" name="formulaNo"></td>
-            <td><input type="text" name="prodDate"></td>
-            <td><input type="number" name="feedQty"></td>
-            <td><button type="button" class="delRow">删除</button></td>
-        </tr>
-    </table>
-    <button id="addRow">添加一行</button>
+<h3>产蛋与饲料数据</h3>
+<table>
+    <tr><td>产蛋数</td><td><input type="number" id="eggCount"></td>
+        <td>破蛋数</td><td><input type="number" id="brokenEggs"></td></tr>
+    <tr><td>产蛋总重（斤）</td><td><input type="number" id="eggWeight"></td>
+        <td>收蛋时间</td><td><input type="text" id="collectTime"></td></tr>
+    <tr><td>饮水总量(m³)</td><td><input type="number" id="waterTotal"></td>
+        <td>昨日料表</td><td><input type="number" id="feedMeterPrev"></td></tr>
+    <tr><td>今日料表</td><td><input type="number" id="feedMeterToday"></td>
+        <td>进料数</td><td><input type="number" id="feedAdded"></td></tr>
+    <tr><td>对比用料</td><td><input type="number" id="feedCompare"></td>
+        <td>添加剂</td><td><input type="text" id="additive"></td></tr>
+</table>
 
-    <h2>计算结果</h2>
-    <table>
-        <tr><td>日总采食</td><td><span id="feedTotalDisplay"></span></td>
-            <td>日均采食</td><td><span id="feedPerHenDisplay"></span> <span id="feedDiffDisplay"></span></td></tr>
-        <tr><td>产蛋率</td><td><span id="layRateDisplay"></span></td>
-            <td>只均产蛋量</td><td><span id="eggMassPerHenDisplay"></span></td></tr>
-        <tr><td>破蛋率</td><td><span id="breakRateDisplay"></span></td>
-            <td>箱重(斤)</td><td><span id="boxWeightDisplay"></span></td></tr>
-        <tr><td>日均饮水(ml/只)</td><td><span id="waterPerHenDisplay"></span></td>
-            <td>料蛋比</td><td><span id="feedEggRatioDisplay"></span></td></tr>
-        <tr><td>水料比</td><td colspan="3"><span id="waterFeedRatioDisplay"></span></td></tr>
-    </table>
+<h3>饲料批次记录（耗用数）</h3>
+<table id="feedTable">
+    <tr><th>料号</th><th>配方编号</th><th>生产日期</th><th>耗用数(kg)</th><th>操作</th></tr>
+    <tr>
+        <td><input type="text" name="feedNo" value="VK116"></td>
+        <td><input type="text" name="formulaNo" value="1069"></td>
+        <td><input type="text" name="prodDate" value="4.26"></td>
+        <td><input type="number" name="feedQty" value="19400"></td>
+        <td><button type="button" class="delRow">删除</button></td>
+    </tr>
+</table>
+<button id="addRow">添加一行</button>
 
-    <h2>日报文本</h2>
-    <textarea id="reportText" readonly></textarea>
-    <br>
-    <button onclick="generateReportText()">生成日报</button>
+<h3>日报输出</h3>
+<textarea id="reportText" readonly></textarea>
+<br><button onclick="generateReportText()">生成日报</button>
 
-    <script>
-        document.getElementById('addRow').addEventListener('click', function() {
-            const table = document.getElementById('feedTable');
-            const newRow = table.insertRow();
-            ['feedNo','formulaNo','prodDate','feedQty'].forEach(name => {
-                const cell = newRow.insertCell();
-                const input = document.createElement('input');
-                input.name = name;
-                cell.appendChild(input);
-            });
-            const opCell = newRow.insertCell();
-            const delBtn = document.createElement('button');
-            delBtn.type = 'button';
-            delBtn.textContent = '删除';
-            delBtn.onclick = () => table.deleteRow(newRow.rowIndex);
-            opCell.appendChild(delBtn);
-        });
+<script>
+function updateStock() {
+    const y = parseInt(document.getElementById('stockYesterday').value) || 0;
+    const d = parseInt(document.getElementById('deadCount').value) || 0;
+    document.getElementById('stockToday').value = y - d;
+}
 
-        function generateFeedLabelText() {
-            const table = document.getElementById('feedTable');
-            let text = '';
-            for (let i = 1; i < table.rows.length; i++) {
-                const cells = table.rows[i].cells;
-                const feedNo = cells[0].querySelector('input').value;
-                const formula = cells[1].querySelector('input').value;
-                const prodDate = cells[2].querySelector('input').value;
-                const qty = cells[3].querySelector('input').value;
-                if (feedNo || formula || prodDate || qty) {
-                    text += `${feedNo}/${formula}/${prodDate}（${qty}）\n`;
-                }
-            }
-            return text;
+document.getElementById('addRow').onclick = () => {
+    const table = document.getElementById('feedTable');
+    const row = table.insertRow();
+    ['feedNo','formulaNo','prodDate','feedQty'].forEach(name => {
+        const cell = row.insertCell();
+        const input = document.createElement('input');
+        input.name = name;
+        cell.appendChild(input);
+    });
+    const opCell = row.insertCell();
+    const delBtn = document.createElement('button');
+    delBtn.innerText = '删除';
+    delBtn.onclick = () => table.deleteRow(row.rowIndex);
+    opCell.appendChild(delBtn);
+};
+
+function generateFeedLabelText() {
+    const table = document.getElementById('feedTable');
+    let lines = "";
+    let lastFeedNo = "";
+    for (let i = 1; i < table.rows.length; i++) {
+        const row = table.rows[i];
+        const feedNo = row.cells[0].querySelector('input').value;
+        const formula = row.cells[1].querySelector('input').value;
+        const date = row.cells[2].querySelector('input').value;
+        const qty = row.cells[3].querySelector('input').value;
+        if (feedNo !== lastFeedNo) {
+            lines += feedNo + "\\n";
+            lastFeedNo = feedNo;
         }
+        lines += `${formula}/${date}（${qty}）\\n`;
+    }
+    return lines;
+}
 
-        function generateReportText() {
-            const $ = id => document.getElementById(id);
-            const get = id => parseFloat($(id).value) || 0;
-            const stock = get('stock'), eggCount = get('eggCount'), eggWeight = get('eggWeight');
-            const brokenEggs = get('brokenEggs'), waterTotal = get('waterTotal');
-            const prev = get('feedMeterPrev'), today = get('feedMeterToday'), added = get('feedAdded'), compare = get('feedCompare');
-            const totalFeed = prev + added - today;
-            const dailyFeed = stock ? totalFeed / stock * 1000 : 0;
-            const layRate = stock ? eggCount / stock * 100 : 0;
-            const eggMass = stock ? eggWeight / stock * 1000 : 0;
-            const breakRate = eggCount ? brokenEggs / eggCount * 100 : 0;
-            const boxWeight = eggCount ? eggWeight / eggCount * 360 * 2 : 0;
-            const waterPerHen = stock ? waterTotal / stock * 1000000 : 0;
-            const feedEggRatio = eggMass ? dailyFeed / eggMass : 0;
-            const waterFeedRatio = dailyFeed ? waterPerHen / dailyFeed : 0;
-            const feedDiff = dailyFeed - compare;
-            // update display
-            $('feedTotalDisplay').innerText = totalFeed.toFixed(2);
-            $('feedPerHenDisplay').innerText = dailyFeed.toFixed(1);
-            $('feedDiffDisplay').innerText = `(${feedDiff.toFixed(1)})`;
-            $('layRateDisplay').innerText = layRate.toFixed(1);
-            $('eggMassPerHenDisplay').innerText = eggMass.toFixed(1);
-            $('breakRateDisplay').innerText = breakRate.toFixed(2);
-            $('boxWeightDisplay').innerText = boxWeight.toFixed(2);
-            $('waterPerHenDisplay').innerText = waterPerHen.toFixed(1);
-            $('feedEggRatioDisplay').innerText = feedEggRatio.toFixed(2);
-            $('waterFeedRatioDisplay').innerText = waterFeedRatio.toFixed(2);
+function generateReportText() {
+    const $ = id => document.getElementById(id).value || '';
+    const dateObj = new Date($('date'));
+    const dateStr = (dateObj.getMonth()+1) + '月' + dateObj.getDate() + '日';
+    const yStock = parseInt($('stockYesterday')) || 0;
+    const d = parseInt($('deadCount')) || 0;
+    const tStock = yStock - d;
+    const eggCount = parseInt($('eggCount')) || 0;
+    const eggWeight = parseFloat($('eggWeight')) || 0;
+    const broken = parseInt($('brokenEggs')) || 0;
+    const water = parseFloat($('waterTotal')) || 0;
+    const prev = parseFloat($('feedMeterPrev')) || 0;
+    const today = parseFloat($('feedMeterToday')) || 0;
+    const added = parseFloat($('feedAdded')) || 0;
+    const compare = parseFloat($('feedCompare')) || 0;
+    const totalFeed = prev + added - today;
+    const avgFeed = tStock ? (totalFeed / tStock * 1000) : 0;
+    const layRate = tStock ? eggCount / tStock * 100 : 0;
+    const eggPerHen = tStock ? eggWeight / tStock : 0;
+    const breakRate = eggCount ? broken / eggCount * 100 : 0;
+    const boxWeight = eggCount ? eggWeight / eggCount * 360 : 0;
+    const waterPerHen = tStock ? water / tStock * 1000000 : 0;
+    const feedEggRatio = eggPerHen ? avgFeed / eggPerHen : 0;
+    const waterFeedRatio = avgFeed ? waterPerHen / avgFeed : 0;
+    const diff = (avgFeed - compare).toFixed(1);
 
-            const dateObj = new Date($('date').value);
-            const dateStr = (dateObj.getMonth() + 1) + '月' + dateObj.getDate() + '日';
-            const report = \`\${$('flock').value}
+    const report = \`\${$('flock')}
 日期：\${dateStr}
 饲料标签：
-\${generateFeedLabelText()}品种：\${$('breed').value}
-日龄：\${$('age').value}
-存栏：\${stock}
-死淘：\${$('deadCount').value}
-日总采食：\${totalFeed.toFixed(2)}
-日均采食：\${dailyFeed.toFixed(1)} (\${feedDiff.toFixed(1)})
+\${generateFeedLabelText()}品种：\${$('breed')}
+日龄：\${$('age')}
+存栏：\${tStock}
+死淘：\${d}
+日总采食：\${totalFeed.toFixed(0)}
+日均采食：\${avgFeed.toFixed(1)}（\${diff > 0 ? '+' : ''}\${diff}）
 产蛋个数：\${eggCount}
 产蛋率：\${layRate.toFixed(1)}
-收蛋时间：\${$('collectTime').value}
+收蛋时间：\${$('collectTime')}
 料蛋比：\${feedEggRatio.toFixed(2)}
 产蛋斤数：\${eggWeight.toFixed(2)}
-只均产蛋量：\${eggMass.toFixed(1)}
-破蛋个数：\${brokenEggs}
+只均产蛋量：\${eggPerHen.toFixed(1)}
+破蛋个数：\${broken}
 破蛋率：\${breakRate.toFixed(2)}
-箱重：\${boxWeight.toFixed(2)}（斤）
-总饮水：\${waterTotal.toFixed(2)}
+箱重：\${boxWeight.toFixed(2)}
+总饮水：\${water.toFixed(2)}
 日均饮水：\${waterPerHen.toFixed(1)}
-光照：\${$('light').value}
-天气：\${$('weather').value}
+光照：\${$('light')}
+天气：\${$('weather')}
 用药：
-\${$('medication').value}
+\${$('medication')}
 \`;
 
-            $('reportText').value = report;
-        }
-    </script>
+    document.getElementById('reportText').value = report;
+}
+</script>
 </body>
 </html>
