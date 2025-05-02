@@ -2,21 +2,13 @@
 <html lang="zh">
 <head>
   <meta charset="UTF-8">
-  <title>蛋鸡日报工具</title>
-  <link rel="manifest" href="manifest.json">
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js');
-      });
-    }
-  </script>
+  <title>蛋鸡日报工具（无缓存）</title>
   <style>
     body { font-family: Arial; margin: 20px; }
     table { border-collapse: collapse; width: 100%; margin-bottom: 12px; }
     td, th { border: 1px solid #ccc; padding: 6px; text-align: center; }
     input, textarea { width: 98%; box-sizing: border-box; }
-    textarea { height: 80px; }
+    textarea { height: 120px; }
     button { padding: 6px 14px; margin: 6px 0; }
   </style>
 </head>
