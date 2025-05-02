@@ -2,18 +2,26 @@
 <html lang="zh">
 <head>
   <meta charset="UTF-8">
-  <title>蛋鸡生产日报工具</title>
+  <title>蛋鸡日报工具</title>
+  <link rel="manifest" href="manifest.json">
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js');
+      });
+    }
+  </script>
   <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    table { border-collapse: collapse; width: 100%; margin-bottom: 20px; }
-    th, td { border: 1px solid #ccc; padding: 6px 10px; text-align: center; }
+    body { font-family: Arial; margin: 20px; }
+    table { border-collapse: collapse; width: 100%; margin-bottom: 12px; }
+    td, th { border: 1px solid #ccc; padding: 6px; text-align: center; }
     input, textarea { width: 98%; box-sizing: border-box; }
-    textarea { height: 120px; }
-    button { padding: 8px 16px; margin: 5px 0; }
+    textarea { height: 80px; }
+    button { padding: 6px 14px; margin: 6px 0; }
   </style>
 </head>
 <body>
-<h1>蛋鸡生产日报自动生成工具</h1>
+<h2>蛋鸡生产日报工具</h2>
 <table>
   <tr><td>日期</td><td><input type="date" id="date"></td>
       <td>栋号</td><td><input type="text" id="flock" value="临猗2栋"></td></tr>
@@ -24,7 +32,7 @@
   <tr><td>今日存栏</td><td><input type="number" id="stockToday" readonly></td>
       <td>光照</td><td><input type="number" id="light"></td></tr>
   <tr><td>天气</td><td colspan="3"><input type="text" id="weather"></td></tr>
-  <tr><td>用药</td><td colspan="3"><textarea id="medication"></textarea></td></tr>
+  <tr><td>用药</td><td colspan="3"><input type="text" id="medication"></td></tr>
 </table>
 
 <h3>产蛋与饲料数据</h3>
@@ -41,106 +49,83 @@
       <td>添加剂</td><td><input type="text" id="additive"></td></tr>
 </table>
 
-<h3>饲料批次记录（耗用数）</h3>
-<table id="feedTable">
-  <tr><th>料号</th><th>配方编号</th><th>生产日期</th><th>耗用数(kg)</th><th>操作</th></tr>
-  <tr>
-    <td><input type="text" name="feedNo" value="VK116"></td>
-    <td><input type="text" name="formulaNo" value="1069"></td>
-    <td><input type="text" name="prodDate" value="4.26"></td>
-    <td><input type="number" name="feedQty" value="19400"></td>
-    <td><button type="button" onclick="this.parentElement.parentElement.remove()">删除</button></td>
-  </tr>
+<h3>计算结果</h3>
+<table>
+<tr><td>存栏</td><td id="vStock"></td>
+    <td>日总采食</td><td id="vFeedTotal"></td></tr>
+<tr><td>日均采食</td><td id="vFeedAvg"></td>
+    <td>产蛋率</td><td id="vLayRate"></td></tr>
+<tr><td>只均产蛋量</td><td id="vEggMass"></td>
+    <td>破蛋率</td><td id="vBreakRate"></td></tr>
+<tr><td>箱重</td><td id="vBoxWeight"></td>
+    <td>日均饮水</td><td id="vWaterAvg"></td></tr>
+<tr><td>料蛋比</td><td id="vFeedEggRatio"></td>
+    <td>水料比</td><td id="vWaterFeedRatio"></td></tr>
 </table>
-<button onclick="addRow()">添加一行</button>
 
-<h3>日报输出</h3>
-<textarea id="reportText" readonly></textarea>
-<br><button onclick="generateReportText()">生成日报</button>
+<button onclick="calc()">计算并生成日报</button>
+<textarea id="reportText"></textarea>
 
 <script>
-function updateStock() {
-  const y = parseInt(document.getElementById('stockYesterday').value) || 0;
-  const d = parseInt(document.getElementById('deadCount').value) || 0;
-  document.getElementById('stockToday').value = y - d;
-}
-function addRow() {
-  const table = document.getElementById('feedTable');
-  const row = table.insertRow();
-  ['feedNo','formulaNo','prodDate','feedQty'].forEach(name => {
-    const cell = row.insertCell();
-    const input = document.createElement('input');
-    input.name = name;
-    cell.appendChild(input);
-  });
-  const opCell = row.insertCell();
-  const delBtn = document.createElement('button');
-  delBtn.innerText = '删除';
-  delBtn.onclick = () => table.deleteRow(row.rowIndex);
-  opCell.appendChild(delBtn);
-}
-function generateFeedLabelText() {
-  const table = document.getElementById('feedTable');
-  let text = "", last = "";
-  for (let i = 1; i < table.rows.length; i++) {
-    const r = table.rows[i];
-    const no = r.cells[0].querySelector('input').value;
-    const f = r.cells[1].querySelector('input').value;
-    const d = r.cells[2].querySelector('input').value;
-    const q = r.cells[3].querySelector('input').value;
-    if (no !== last) { text += no + "\n"; last = no; }
-    text += `${f}/${d}（${q}）\n`;
-  }
-  return text;
-}
-function generateReportText() {
-  const $ = id => document.getElementById(id).value || '';
-  const stock = parseInt($('stockYesterday')) - parseInt($('deadCount')) || 0;
-  const eggs = parseInt($('eggCount')) || 0;
-  const weight = parseFloat($('eggWeight')) || 0;
-  const broken = parseInt($('brokenEggs')) || 0;
-  const water = parseFloat($('waterTotal')) || 0;
-  const prev = parseFloat($('feedMeterPrev')) || 0;
-  const today = parseFloat($('feedMeterToday')) || 0;
-  const added = parseFloat($('feedAdded')) || 0;
-  const compare = parseFloat($('feedCompare')) || 0;
-  const totalFeed = prev + added - today;
-  const feedPerHen = stock ? totalFeed / stock * 1000 : 0;
-  const layRate = stock ? eggs / stock * 100 : 0;
-  const eggPerHen = stock ? weight / stock : 0;
-  const breakRate = eggs ? broken / eggs * 100 : 0;
-  const boxWeight = eggs ? weight / eggs * 360 : 0;
-  const waterPerHen = stock ? water / stock * 1000000 : 0;
-  const feedEggRatio = eggPerHen ? feedPerHen / eggPerHen : 0;
-  const waterFeedRatio = feedPerHen ? waterPerHen / feedPerHen : 0;
-  const diff = (feedPerHen - compare).toFixed(1);
-  const date = new Date($('date')); const ds = (date.getMonth()+1)+'月'+date.getDate()+'日';
+function $(id){return document.getElementById(id)}
+function updateStock(){ $('stockToday').value = $('stockYesterday').value - $('deadCount').value }
 
-  document.getElementById('reportText').value =
-\`\${$('flock')}
+function calc() {
+  const s = +$('stockYesterday').value - +$('deadCount').value;
+  const e = +$('eggCount').value, w = +$('eggWeight').value;
+  const b = +$('brokenEggs').value, wt = +$('waterTotal').value;
+  const f1 = +$('feedMeterPrev').value, f2 = +$('feedMeterToday').value, fa = +$('feedAdded').value;
+  const fc = +$('feedCompare').value;
+  const tf = f1 + fa - f2;
+  const af = s ? tf/s*1000 : 0;
+  const lr = s ? e/s*100 : 0;
+  const ep = s ? w/s : 0;
+  const br = e ? b/e*100 : 0;
+  const box = e ? w/e*360 : 0;
+  const wa = s ? wt/s*1e6 : 0;
+  const fe = ep ? af/ep : 0;
+  const wf = af ? wa/af : 0;
+
+  $('vStock').innerText = s;
+  $('vFeedTotal').innerText = tf.toFixed(0);
+  $('vFeedAvg').innerText = af.toFixed(1);
+  $('vLayRate').innerText = lr.toFixed(1);
+  $('vEggMass').innerText = ep.toFixed(1);
+  $('vBreakRate').innerText = br.toFixed(2);
+  $('vBoxWeight').innerText = box.toFixed(2);
+  $('vWaterAvg').innerText = wa.toFixed(1);
+  $('vFeedEggRatio').innerText = fe.toFixed(2);
+  $('vWaterFeedRatio').innerText = wf.toFixed(2);
+
+  const d = new Date($('date').value);
+  const ds = (d.getMonth()+1) + '月' + d.getDate() + '日';
+  $('reportText').value =
+\`\${$('flock').value}
 日期：\${ds}
 饲料标签：
-\${generateFeedLabelText()}品种：\${$('breed')}
-日龄：\${$('age')}
-存栏：\${stock}
-死淘：\${$('deadCount')}
-日总采食：\${totalFeed.toFixed(0)}
-日均采食：\${feedPerHen.toFixed(1)}（\${diff > 0 ? '+' : ''}\${diff}）
-产蛋个数：\${eggs}
-产蛋率：\${layRate.toFixed(1)}
-收蛋时间：\${$('collectTime')}
-料蛋比：\${feedEggRatio.toFixed(2)}
-产蛋斤数：\${weight.toFixed(2)}
-只均产蛋量：\${eggPerHen.toFixed(1)}
-破蛋个数：\${broken}
-破蛋率：\${breakRate.toFixed(2)}
-箱重：\${boxWeight.toFixed(2)}
-总饮水：\${water.toFixed(2)}
-日均饮水：\${waterPerHen.toFixed(1)}
-光照：\${$('light')}
-天气：\${$('weather')}
+VK116
+1069/4.26（19400）
+品种：\${$('breed').value}
+日龄：\${$('age').value}
+存栏：\${s}
+死淘：\${$('deadCount').value}
+日总采食：\${tf}
+日均采食：\${af.toFixed(1)}
+产蛋个数：\${e}
+产蛋率：\${lr.toFixed(1)}
+收蛋时间：\${$('collectTime').value}
+料蛋比：\${fe.toFixed(2)}
+产蛋斤数：\${w.toFixed(2)}
+只均产蛋量：\${ep.toFixed(1)}
+破蛋个数：\${b}
+破蛋率：\${br.toFixed(2)}
+箱重：\${box.toFixed(2)}
+总饮水：\${wt.toFixed(2)}
+日均饮水：\${wa.toFixed(1)}
+光照：\${$('light').value}
+天气：\${$('weather').value}
 用药：
-\${$('medication')}
+\${$('medication').value}
 \`;
 }
 </script>

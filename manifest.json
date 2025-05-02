@@ -4,7 +4,7 @@
   "start_url": "index.html",
   "display": "standalone",
   "background_color": "#ffffff",
-  "description": "一个用于蛋鸡养殖数据统计与日报生成的工具",
+  "description": "离线可用的蛋鸡生产日报生成工具",
   "icons": [
     {
       "src": "icon-192.png",
