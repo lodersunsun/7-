@@ -1,11 +1,4 @@
-import zipfile
-from pathlib import Path
 
-# 创建目录结构
-base_dir = Path("/mnt/data/egg-report-tool")
-base_dir.mkdir(parents=True, exist_ok=True)
-
-html_content = """
 <!DOCTYPE html>
 <html lang="zh">
 <head>
@@ -128,7 +121,7 @@ html_content = """
                 const prodDate = cells[2].querySelector('input').value;
                 const qty = cells[3].querySelector('input').value;
                 if (feedNo || formula || prodDate || qty) {
-                    text += `${feedNo}/${formula}/${prodDate}（${qty}）\\n`;
+                    text += `${feedNo}/${formula}/${prodDate}（${qty}）\n`;
                 }
             }
             return text;
@@ -195,15 +188,3 @@ html_content = """
     </script>
 </body>
 </html>
-"""
-
-# 写入 HTML 文件
-html_path = base_dir / "index.html"
-html_path.write_text(html_content, encoding='utf-8')
-
-# 创建 zip 压缩包
-zip_path = "/mnt/data/蛋鸡日报工具.zip"
-with zipfile.ZipFile(zip_path, 'w') as zf:
-    zf.write(html_path, arcname="index.html")
-
-zip_path
