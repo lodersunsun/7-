@@ -1,36 +1,324 @@
 <!DOCTYPE html>
 <html lang="zh">
 <head>
-  <meta charset="UTF-8" />
-  <title>蛋鸡生产日报工具</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
-  <style>
-    body { font-family: Arial, sans-serif; background-color: #F5F5F5; color: #333; padding: 1rem; margin: 0; }
-    .container { max-width: 100%; margin: auto; }
-    .card { background-color: #FFF; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); padding: 1rem; margin-bottom: 1rem; }
-    .card h2 { color: #4CAF50; margin-top: 0; font-size: 1.2rem; }
-    .card h3 { color: #2196F3; font-size: 1.1rem; }
-    table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
-    th, td { padding: 6px; text-align: left; border: 1px solid #E0E0E0; }
-    th { color: #2196F3; font-weight: 600; }
-    input { width: 100%; padding: 5px; border: 1px solid #E0E0E0; border-radius: 4px; box-sizing: border-box; }
-    input[readonly] { background-color: #F5F5F5; }
-    button { background-color: #4CAF50; color: #FFF; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; }
-    .time-range { display: flex; align-items: center; gap: 0.5rem; }
-    .time-range input { width: 45%; }
-    .add-row-btn { background-color: #2196F3; margin-top: 0.5rem; }
-    .remove-row-btn { background-color: #D32F2F; margin-left: 0.5rem; }
-    @media (max-width: 600px) { 
-      .card { padding: 0.8rem; } 
-      table { font-size: 0.8rem; } 
-      input { font-size: 0.8rem; } 
-      button { padding: 6px 10px; } 
-    }
-  </style>
+<meta charset="utf-8">
+<title>蛋鸡生产日报工具</title>
+<style>
+body {font-family: Arial, sans-serif;}
+table {border-collapse: collapse; width: 100%; max-width: 600px;}
+th, td {border: 1px solid #000; padding: 5px; text-align: left;}
+input {padding: 3px;}
+button {padding: 3px 8px;}
+.avgHint {font-size: 0.9em; color: #555;}
+.feed-row {margin-bottom: 5px;}
+</style>
 </head>
 <body>
-<!-- 内容略，为节省空间 -->
-<p>HTML 内容过长，此处省略部分展示。已成功生成文件。</p>
+<h1>蛋鸡生产日报工具</h1>
+<form id="reportForm">
+<table>
+<tr><td>日期：</td><td><input type="date" id="reportDate" required></td></tr>
+<tr><td>存栏鸡（只）：</td><td><input type="number" id="birdCount" required></td></tr>
+<tr><td>昨日料表（kg）：</td><td id="feedLastContainer">
+    <div class="feed-row">
+        <input type="number" class="feed-amount" step="0.01" value="">
+        <input type="text" class="feed-label" value="VK116/1069/4.26">
+        <button type="button" class="remove-btn">-</button>
+    </div>
+    <button type="button" class="add-btn">+</button>
+</td></tr>
+<tr><td>进料数（kg）：</td><td id="feedAddContainer">
+    <div class="feed-row">
+        <input type="number" class="feed-amount" step="0.01" value="">
+        <input type="text" class="feed-label" value="VK116/1069/4.26">
+        <button type="button" class="remove-btn">-</button>
+    </div>
+    <button type="button" class="add-btn">+</button>
+</td></tr>
+<tr><td>今日料表（kg）：</td><td id="feedTodayContainer">
+    <div class="feed-row">
+        <input type="number" class="feed-amount" step="0.01" value="">
+        <input type="text" class="feed-label" value="VK116/1069/4.26">
+        <button type="button" class="remove-btn">-</button>
+    </div>
+    <button type="button" class="add-btn">+</button>
+</td></tr>
+<tr><td>昨日水表（吨）：</td><td><input type="number" id="waterLast" step="0.01" value=""></td></tr>
+<tr><td>今日水表（吨）：</td><td><input type="number" id="waterToday" step="0.01" value=""></td></tr>
+<tr><td>产蛋数（枚）：</td><td><input type="number" id="eggsCount" value=""></td></tr>
+<tr><td>蛋重（kg）：</td><td><input type="number" id="eggWeight" step="0.01" value=""></td></tr>
+</table>
+<div style="margin-top:10px;">
+<button type="button" id="calculate">计算</button>
+<button type="button" id="saveRecord">保存记录</button>
+</div>
+</form>
+
+<h2>实时分析</h2>
+<table>
+<tr>
+    <th>日均采食（g）<br><span class="avgHint" id="avgFeedHint"></span></th>
+    <td><input type="text" id="avgFeed" readonly></td>
+</tr>
+<tr>
+    <th>产蛋率（%）<br><span class="avgHint" id="eggRateHint"></span></th>
+    <td><input type="text" id="eggRate" readonly></td>
+</tr>
+<tr>
+    <th>只均产蛋量（g）<br><span class="avgHint" id="perEggWeightHint"></span></th>
+    <td><input type="text" id="perEggWeight" readonly></td>
+</tr>
+<tr>
+    <th>料蛋比<br><span class="avgHint" id="feedEggRatioHint"></span></th>
+    <td><input type="text" id="feedEggRatio" readonly></td>
+</tr>
+<tr>
+    <th>水料比<br><span class="avgHint" id="waterFeedRatioHint"></span></th>
+    <td><input type="text" id="waterFeedRatio" readonly></td>
+</tr>
+</table>
+
+<script type="module">
+// 获取元素
+const reportDate = document.getElementById('reportDate');
+const birdCountInput = document.getElementById('birdCount');
+const waterLastInput = document.getElementById('waterLast');
+const waterTodayInput = document.getElementById('waterToday');
+const eggsCountInput = document.getElementById('eggsCount');
+const eggWeightInput = document.getElementById('eggWeight');
+
+const feedLastContainer = document.getElementById('feedLastContainer');
+const feedAddContainer = document.getElementById('feedAddContainer');
+const feedTodayContainer = document.getElementById('feedTodayContainer');
+
+const avgFeedOutput = document.getElementById('avgFeed');
+const eggRateOutput = document.getElementById('eggRate');
+const perEggWeightOutput = document.getElementById('perEggWeight');
+const feedEggRatioOutput = document.getElementById('feedEggRatio');
+const waterFeedRatioOutput = document.getElementById('waterFeedRatio');
+
+const avgFeedHint = document.getElementById('avgFeedHint');
+const eggRateHint = document.getElementById('eggRateHint');
+const perEggWeightHint = document.getElementById('perEggWeightHint');
+const feedEggRatioHint = document.getElementById('feedEggRatioHint');
+const waterFeedRatioHint = document.getElementById('waterFeedRatioHint');
+
+const calculateBtn = document.getElementById('calculate');
+const saveRecordBtn = document.getElementById('saveRecord');
+
+// 添加一行数据条目
+function addFeedRow(container) {
+    const row = document.createElement('div');
+    row.className = 'feed-row';
+    // 数量输入框
+    const amountInput = document.createElement('input');
+    amountInput.type = 'number';
+    amountInput.step = '0.01';
+    amountInput.className = 'feed-amount';
+    amountInput.value = '';
+    // 标签输入框
+    const labelInput = document.createElement('input');
+    labelInput.type = 'text';
+    labelInput.className = 'feed-label';
+    labelInput.value = 'VK116/1069/4.26';
+    // 删除按钮
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.className = 'remove-btn';
+    removeBtn.textContent = '-';
+    removeBtn.addEventListener('click', () => {
+        container.removeChild(row);
+    });
+    row.appendChild(amountInput);
+    row.appendChild(labelInput);
+    row.appendChild(removeBtn);
+    // 插入到“+”按钮前
+    container.insertBefore(row, container.querySelector('.add-btn'));
+}
+
+// 为现有的“+”按钮添加事件
+const addButtons = document.querySelectorAll('.add-btn');
+addButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+        // 确定是哪个容器
+        const container = btn.parentElement;
+        addFeedRow(container);
+    });
+});
+
+// 删除按钮事件由 addFeedRow 添加，对于初始行先手动添加
+const initialRemoveButtons = document.querySelectorAll('.remove-btn');
+initialRemoveButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+        const row = btn.parentElement;
+        row.parentElement.removeChild(row);
+    });
+});
+
+// 计算函数：计算各项指标
+function calculateAll() {
+    const birdCount = parseFloat(birdCountInput.value) || 0;
+    // 汇总料表数据
+    let sumLast = 0, sumAdd = 0, sumToday = 0;
+    // 遍历“昨日料表”所有输入
+    feedLastContainer.querySelectorAll('.feed-amount').forEach(input => {
+        const val = parseFloat(input.value) || 0;
+        sumLast += val;
+    });
+    // 遍历“进料数”所有输入
+    feedAddContainer.querySelectorAll('.feed-amount').forEach(input => {
+        const val = parseFloat(input.value) || 0;
+        sumAdd += val;
+    });
+    // 遍历“今日料表”所有输入
+    feedTodayContainer.querySelectorAll('.feed-amount').forEach(input => {
+        const val = parseFloat(input.value) || 0;
+        sumToday += val;
+    });
+    // 计算饲料采食量（kg）
+    const feedConsumed = sumLast + sumAdd - sumToday;
+    // 转换为克
+    const feedConsumedGram = feedConsumed * 1000;
+    // 日均采食（g/只）
+    let dailyAvgFeed = 0;
+    if (birdCount > 0) {
+        dailyAvgFeed = feedConsumedGram / birdCount;
+    }
+    // 产蛋率（%）
+    const eggsCount = parseFloat(eggsCountInput.value) || 0;
+    let eggRate = 0;
+    if (birdCount > 0) {
+        eggRate = (eggsCount / birdCount) * 100;
+    }
+    // 只均产蛋量（g）
+    const eggWeight = parseFloat(eggWeightInput.value) || 0;
+    let perEggWeight = 0;
+    if (birdCount > 0) {
+        perEggWeight = (eggWeight * 1000) / birdCount;
+    }
+    // 料蛋比：饲料克 / 蛋重克
+    let feedEggRatio = 0;
+    if (eggWeight > 0) {
+        feedEggRatio = feedConsumedGram / (eggWeight * 1000);
+    }
+    // 水料比：饮水量克 / 饲料克
+    let waterFeedRatio = 0;
+    const waterLast = parseFloat(waterLastInput.value) || 0;
+    const waterToday = parseFloat(waterTodayInput.value) || 0;
+    const waterConsumed = (waterToday - waterLast) * 1000;
+    if (feedConsumedGram > 0) {
+        waterFeedRatio = waterConsumed / feedConsumedGram;
+    }
+    // 显示结果，保留一位小数
+    avgFeedOutput.value = dailyAvgFeed.toFixed(1);
+    eggRateOutput.value = eggRate.toFixed(1);
+    perEggWeightOutput.value = perEggWeight.toFixed(1);
+    feedEggRatioOutput.value = feedEggRatio.toFixed(2);
+    waterFeedRatioOutput.value = waterFeedRatio.toFixed(2);
+}
+
+// 计算并显示七日平均提示
+function updateAverageHints() {
+    // 从 localStorage 读取历史记录
+    const dataKey = 'dailyHistory';
+    let history = JSON.parse(localStorage.getItem(dataKey) || '[]');
+    if (!Array.isArray(history)) {
+        history = [];
+    } else {
+        // 按日期排序，保证时间顺序
+        history.sort((a, b) => a.date.localeCompare(b.date));
+    }
+    // 取最近7条
+    const last7 = history.slice(-7);
+    // 如果没有记录，则清空提示
+    if (last7.length === 0) {
+        avgFeedHint.textContent = '';
+        eggRateHint.textContent = '';
+        perEggWeightHint.textContent = '';
+        feedEggRatioHint.textContent = '';
+        waterFeedRatioHint.textContent = '';
+        return;
+    }
+    // 计算各项平均值
+    let sumAvgFeed = 0, sumEggRate = 0, sumPerEgg = 0, sumFeedEgg = 0, sumWaterFeed = 0;
+    last7.forEach(item => {
+        sumAvgFeed += item.avgFeed;
+        sumEggRate += item.eggRate;
+        sumPerEgg += item.perEggWeight;
+        sumFeedEgg += item.feedEggRatio;
+        sumWaterFeed += item.waterFeedRatio;
+    });
+    const n = last7.length;
+    const avg7AvgFeed = (sumAvgFeed / n).toFixed(1);
+    const avg7EggRate = (sumEggRate / n).toFixed(1);
+    const avg7PerEgg = (sumPerEgg / n).toFixed(1);
+    const avg7FeedEgg = (sumFeedEgg / n).toFixed(2);
+    const avg7WaterFeed = (sumWaterFeed / n).toFixed(2);
+    // 更新提示文本
+    avgFeedHint.textContent = avg7AvgFeed + '(' + n + '日均)';
+    eggRateHint.textContent = avg7EggRate + '(' + n + '日均)';
+    perEggWeightHint.textContent = avg7PerEgg + '(' + n + '日均)';
+    feedEggRatioHint.textContent = avg7FeedEgg + '(' + n + '日均)';
+    waterFeedRatioHint.textContent = avg7WaterFeed + '(' + n + '日均)';
+}
+
+// 保存当前记录到 localStorage
+function saveRecord() {
+    // 先计算当前数据
+    calculateAll();
+    const dataKey = 'dailyHistory';
+    let history = JSON.parse(localStorage.getItem(dataKey) || '[]');
+    if (!Array.isArray(history)) {
+        history = [];
+    }
+    // 获取当前日期（YYYY-MM-DD）
+    let dateStr = reportDate.value;
+    if (!dateStr) {
+        const today = new Date();
+        dateStr = today.toISOString().split('T')[0];
+    }
+    // 获取当前指标值
+    const currentData = {
+        date: dateStr,
+        avgFeed: parseFloat(avgFeedOutput.value) || 0,
+        eggRate: parseFloat(eggRateOutput.value) || 0,
+        perEggWeight: parseFloat(perEggWeightOutput.value) || 0,
+        feedEggRatio: parseFloat(feedEggRatioOutput.value) || 0,
+        waterFeedRatio: parseFloat(waterFeedRatioOutput.value) || 0
+    };
+    // 如果相同日期已有记录，则更新；否则添加
+    const existingIndex = history.findIndex(item => item.date === dateStr);
+    if (existingIndex !== -1) {
+        history[existingIndex] = currentData;
+    } else {
+        history.push(currentData);
+    }
+    // 按日期排序
+    history.sort((a, b) => a.date.localeCompare(b.date));
+    // 保留最近30天记录，防止过长
+    if (history.length > 30) {
+        history = history.slice(history.length - 30);
+    }
+    // 存回 localStorage
+    localStorage.setItem(dataKey, JSON.stringify(history));
+    // 更新提示
+    updateAverageHints();
+    alert('记录已保存');
+}
+
+// 事件绑定
+calculateBtn.addEventListener('click', () => {
+    calculateAll();
+});
+saveRecordBtn.addEventListener('click', () => {
+    saveRecord();
+});
+
+// 页面加载时更新提示
+window.addEventListener('load', () => {
+    updateAverageHints();
+});
+</script>
+
 </body>
 </html>
